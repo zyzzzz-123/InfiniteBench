@@ -235,13 +235,12 @@ def get_score_one_math_find(pred, label, model_name: str) -> bool:
 
 
 def get_score_one_longdialogue_qa_eng(pred, label, model_name: str) -> bool:
-    label = label[0]
     pred = pred.strip()
-    for c in ["\n", ":", '"', "'", ".", ",", "?", "!", "{", "}"]:
-        pred = pred.replace(c, " ")
-    words = pred.split()
-    words = [x.upper() for x in words]
-    return label in words
+    pred = pred.upper()
+    for item in label:
+        if item.upper() in pred:
+            return 1
+    return 0
 
 
 def get_score_one_longbook_choice_eng(pred, label, model_name: str) -> bool:
