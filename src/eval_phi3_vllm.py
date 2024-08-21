@@ -15,14 +15,14 @@ from eval_utils import (
     get_answer,
     DATA_NAME_TO_MAX_NEW_TOKENS,
 )
-# from vllm import LLM, SamplingParams
+from vllm import LLM, SamplingParams
 from args import parse_args
 
 
 MAX_POSITION_ID = 128 * 1024  # Determined by the model
 TRUNCATE_LEN = 128 * 1024
 
-# sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
+sampling_params = SamplingParams(temperature=0.8, top_p=0.95, max_tokens=1000)
 def truncate_input(input: list, max_length: int, manner="middle"):
     if len(input) <= max_length:
         return input
@@ -70,10 +70,10 @@ def get_pred(
     tokenized_chat = tok.apply_chat_template(messages, tokenize=True, add_generation_prompt=True, return_tensors="pt")
     print(tok.decode(tokenized_chat[0])[:200])
     print(tok.decode(tokenized_chat[0])[-200:])
-    output = model(input_text)
-    # outputs = model.generate([input_text], sampling_params)
+    # output = model(input_text)
+    outputs = model.generate([input_text], sampling_params)
     # print(outputs)
-    # output = outputs[0].outputs[0].text
+    output = outputs[0].outputs[0].text
     print("Chunked generation:", output)
     return output
 
@@ -94,8 +94,7 @@ class HuggingFaceModel:
                 model_kwargs=model_kwargs,
             )
             print("pipeline")
-        except Exception as e:
-            print(e)
+        except:
             print("not using pipeline")
             self.pipeline = None
             self.model = AutoModelForCausalLM.from_pretrained(name_or_path, trust_remote_code=True,torch_dtype=torch.bfloat16,)
@@ -136,14 +135,14 @@ def load_model(
     # tok.pad_token = tok.eos_token
     print("Loading model")
     start_time = time.time()
-    # llm = LLM(model=model_name, trust_remote_code=True)#, tensor_parallel_size=ngpu)
-    llm = HuggingFaceModel(
-    name_or_path=model_name,
-    do_sample=False,
-    repetition_penalty=1,
-    stop="",
-    max_new_tokens=1000,
-    )
+    llm = LLM(model=model_name, trust_remote_code=True)#, tensor_parallel_size=ngpu)
+    # llm = HuggingFaceModel(
+    # name_or_path=model_name,
+    # do_sample=False,
+    # repetition_penalty=1,
+    # stop="",
+    # max_new_tokens=1000,
+    # )
     print("Time taken:", round(time.time() - start_time))
     return llm, tok  # type: ignore
 
@@ -161,9 +160,7 @@ if __name__ == "__main__":
     model, tok = load_model(args.model_path)
     # sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
     # Data
-    model_name_ = args.model_path.split("/")[-2]
-    print(model_name_)
-    result_dir = Path(args.output_dir, model_name_)
+    result_dir = Path(args.output_dir, model_name)
     result_dir.mkdir(exist_ok=True, parents=True)
     examples = load_data(data_name, data_dir=args.data_dir)
 
